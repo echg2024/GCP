@@ -1,26 +1,36 @@
-Terraform Fundamentals
+Infrastructure as Code with Terraform
 experiment
 Lab
 schedule
-35 minutes
+1 hour
 universal_currency_alt
-1 Credit
+5 Credits
 show_chart
-Introductory
+Intermediate
 info
 This lab may incorporate AI tools to support your learning.
-GSP156
+This lab was developed with our partner, Hashicorp. Your personal information may be shared with Hashicorp, the lab sponsor, if you have opted-in to receive product updates, announcements, and offers in your Account Profile.
+
+GSP750
 Google Cloud self-paced labs logo
 
 Overview
-Terraform enables you to safely and predictably create, change, and improve infrastructure. It is an open source tool that codifies APIs into declarative configuration files that can be shared among co-workers, treated as code, edited, reviewed, and versioned.
+Terraform is the infrastructure as code offering from HashiCorp. It is a tool for building, changing, and managing infrastructure in a safe, repeatable way. Operators and Infrastructure teams can use Terraform to manage environments with a configuration language called the HashiCorp Configuration Language (HCL) for human-readable, automated deployments.
 
+Infrastructure as code is the process of managing infrastructure in a file or files rather than manually configuring resources in a user interface. A resource in this instance is any piece of infrastructure in a given environment, such as a virtual machine, security group, network interface, etc. At a high level, Terraform allows operators to use HCL to author files containing definitions of their desired resources on almost any provider (AWS, Google Cloud, GitHub, Docker, etc.) and automates the creation of those resources at the time of apply.
+
+A simple workflow for deployment will follow closely to the steps below:
+
+Scope - Confirm what resources need to be created for a given project.
+Author - Create the configuration file in HCL based on the scoped parameters.
+Initialize - Run terraform init in the project directory with the configuration files. This will download the correct provider plug-ins for the project.
+Plan & Apply - Run terraform plan to verify creation process and then terraform apply to create real resources as well as the state file that compares future changes in your configuration files to what actually exists in your deployment environment.
 Objectives
 In this lab, you will learn how to perform the following tasks:
 
-Get started with Terraform in Google Cloud
-Install Terraform from installation binaries
-Create a VM instance infrastructure using Terraform
+Build, change, and destroy infrastructure with Terraform
+Create Resource Dependencies with Terraform
+Provision infrastructure with Terraform
 Setup and requirements
 Before you click the Start Lab button
 Read these instructions. Labs are timed and you cannot pause them. The timer, which starts when you click Start Lab, shows how long Google Cloud resources are made available to you.
@@ -49,7 +59,7 @@ Tip: Arrange the tabs in separate windows, side-by-side.
 Note: If you see the Choose an account dialog, click Use Another Account.
 If necessary, copy the Username below and paste it into the Sign in dialog.
 
-student-02-9b1994f72bb3@qwiklabs.net
+"Username"
 Copied!
 You can also find the Username in the Lab Details pane.
 
@@ -57,7 +67,7 @@ Click Next.
 
 Copy the Password below and paste it into the Welcome dialog.
 
-dwNqDzW35lEU
+"Password"
 Copied!
 You can also find the Password in the Lab Details pane.
 
@@ -82,9 +92,9 @@ Click through the following windows:
 
 Continue through the Cloud Shell information window.
 Authorize Cloud Shell to use your credentials to make Google Cloud API calls.
-When you are connected, you are already authenticated, and the project is set to your Project_ID, qwiklabs-gcp-04-0ead983bfbe2. The output contains a line that declares the Project_ID for this session:
+When you are connected, you are already authenticated, and the project is set to your Project_ID, PROJECT_ID. The output contains a line that declares the Project_ID for this session:
 
-Your Cloud Platform project in this session is set to qwiklabs-gcp-04-0ead983bfbe2
+Your Cloud Platform project in this session is set to "PROJECT_ID"
 gcloud is the command-line tool for Google Cloud. It comes pre-installed on Cloud Shell and supports tab-completion.
 
 (Optional) You can list the active account name with this command:
@@ -94,7 +104,7 @@ Click Authorize.
 Output:
 
 ACTIVE: *
-ACCOUNT: student-02-9b1994f72bb3@qwiklabs.net
+ACCOUNT: "ACCOUNT"
 
 To set the active account, run:
     $ gcloud config set account `ACCOUNT`
@@ -104,62 +114,109 @@ Copied!
 Output:
 
 [core]
-project = qwiklabs-gcp-04-0ead983bfbe2
+project = "PROJECT_ID"
 Note: For full documentation of gcloud, in Google Cloud, refer to the gcloud CLI overview guide.
-What is Terraform?
-Terraform is a tool for building, changing, and versioning infrastructure safely and efficiently. Terraform can manage existing, popular service providers and custom in-house solutions.
+Task 1. Build infrastructure
+Terraform comes pre-installed in Cloud Shell. With Terraform already installed, you can dive right in and create some infrastructure.
 
-Configuration files describe to Terraform the components needed to run a single application or your entire data center. Terraform generates an execution plan describing what it will do to reach the desired state, and then executes it to build the described infrastructure. As the configuration changes, Terraform can determine what changed and create incremental execution plans that can be applied.
+Start by creating your example configuration to a file named main.tf. Terraform recognizes files ending in .tf or .tf.json as configuration files and will load them when it runs.
 
-The infrastructure Terraform can manage includes both low-level components such as compute instances, storage, and networking, and high-level components such as DNS entries and SaaS features.
-
-Key features
-Infrastructure as code
-Infrastructure is described using a high-level configuration syntax. This allows a blueprint of your data center to be versioned and treated as you would any other code. Additionally, infrastructure can be shared and re-used.
-
-Execution plans
-Terraform has a planning step in which it generates an execution plan. The execution plan shows what Terraform will do when you execute the apply command. This lets you avoid any surprises when Terraform manipulates infrastructure.
-
-Resource graph
-Terraform builds a graph of all your resources and parallelizes the creation and modification of any non-dependent resources. Because of this, Terraform builds infrastructure as efficiently as possible, and operators get insight into dependencies in their infrastructure.
-
-Change automation
-Complex changesets can be applied to your infrastructure with minimal human interaction. With the previously mentioned execution plan and resource graph, you know exactly what Terraform will change and in what order, which helps you avoid many possible human errors.
-
-Task 1. Verifying Terraform installation
-Terraform comes pre-installed in Cloud Shell.
-
-Open a new Cloud Shell tab, and verify that Terraform is available:
-terraform
+Create the main.tf file:
+touch main.tf
 Copied!
-The resulting help output should be similar to this:
+Click the Open Editor button on the toolbar of Cloud Shell. (You can switch between Cloud Shell and the code editor by using the Open Editor and Open Terminal icons as required, or click the Open in new window button to leave the Editor open in a separate tab).
 
-Usage: terraform [--version] [--help] <command></command> [args]
+In the Editor, add the following content to the main.tf file.
 
-The available commands for execution are listed below. The most common, useful commands are shown first, followed by less common or more advanced commands. If you're just getting started with Terraform, stick with the common commands. For the other commands, please read the help and docs before usage.
+terraform {
+  required_providers {
+    google = {
+      source = "hashicorp/google"
+      version = "3.5.0"
+    }
+  }
+}
 
-Common commands: apply Builds or changes infrastructure console Interactive console for Terraform interpolations destroy Destroy Terraform-managed infrastructure env Workspace management fmt Rewrites config files to canonical format get Download and install modules for the configuration graph Create a visual graph of Terraform resources import Import existing infrastructure into Terraform init Initialize a Terraform working directory output Read an output from a state file plan Generate and show an execution plan providers Prints a tree of the providers used in the configuration push Upload this Terraform module to Atlas to run refresh Update local state file against real resources show Inspect Terraform state or plan taint Manually mark a resource for recreation untaint Manually unmark a resource as tainted validate Validates the Terraform files version Prints the Terraform version workspace Workspace management
+provider "google" {
 
-All other commands: debug Debug output management (experimental) force-unlock Manually unlock the terraform state state Advanced state management 
-Task 2. Build infrastructure
-With Terraform installed, you can immediately start creating some infrastructure.
+  project = "PROJECT ID"
+  region  = "REGION"
+  zone    = "ZONE"
+}
 
-Configuration
-The set of files used to describe infrastructure in Terraform is simply known as a Terraform configuration. In this section, you will write your first configuration to launch a single VM instance. The format of the configuration files can be found in the Terraform Language Documentation. We recommend using JSON for creating configuration files.
-
-In Cloud Shell, create an empty configuration file named instance.tf with the following command:
-touch instance.tf
+resource "google_compute_network" "vpc_network" {
+  name = "terraform-network"
+}
 Copied!
-Click Open Editor on the Cloud Shell toolbar.
-To switch between Cloud Shell and the code editor, click Open Editor or Open Terminal as required, or click Open in a new window to leave the Editor open in a separate tab.
+Note: To use this snippet with Terraform 0.12, remove the terraform {} block.
+Terraform block
+The terraform {} block is required so Terraform knows which provider to download from the Terraform Registry. In the configuration above, the google provider's source is defined as hashicorp/google which is shorthand for registry.terraform.io/hashicorp/google.
 
-Click the instance.tf file and add the following content in it:
+You can also assign a version to each provider defined in the required_providers block. The version argument is optional, but recommended. It is used to constrain the provider to a specific version or a range of versions in order to prevent downloading a new provider that may possibly contain breaking changes. If the version isn't specified, Terraform will automatically download the most recent provider during initialization.
 
-resource "google_compute_instance" "terraform" {
-  project      = "qwiklabs-gcp-04-0ead983bfbe2"
-  name         = "terraform"
-  machine_type = "e2-medium"
-  zone         = "us-west1-c"
+To learn more, on the HashiCorp Terraform website, see Provider Requirements.
+
+Providers
+The provider block is used to configure the named provider, in this case google. A provider is responsible for creating and managing resources. Multiple provider blocks can exist if a Terraform configuration manages resources from different providers.
+
+Initialization
+The first command to run for a new configuration -- or after checking out an existing configuration from version control -- is terraform init, which initializes various local settings and data that will be used by subsequent commands.
+
+Initialize your new Terraform configuration by running the terraform init command in the same directory as your main.tf file:
+terraform init
+Copied!
+Creating resources
+Apply you configuration now by running the command terraform apply:
+terraform apply
+Copied!
+The output has a + next to resource "google_compute_network" "vpc_network", meaning that Terraform will create this resource. Beneath that, it shows the attributes that will be set. When the value displayed is (known after apply), it means that the value won't be known until the resource is created.
+
+If the plan was created successfully, Terraform will now pause and wait for approval before proceeding. If anything in the plan seems incorrect or dangerous, it is safe to abort here with no changes made to your infrastructure.
+
+If terraform apply failed with an error, read the error message and fix the error that occurred.
+
+The plan looks acceptable here, so type yes at the confirmation prompt to proceed.
+Executing the plan will take a few minutes since Terraform waits for the network to be created successfully:
+
+# ...
+  Enter a value: yes
+
+google_compute_network.vpc_network: Creating...
+google_compute_network.vpc_network: Still creating... [10s elapsed]
+google_compute_network.vpc_network: Still creating... [20s elapsed]
+google_compute_network.vpc_network: Still creating... [30s elapsed]
+google_compute_network.vpc_network: Still creating... [40s elapsed]
+google_compute_network.vpc_network: Still creating... [50s elapsed]
+google_compute_network.vpc_network: Creation complete after 58s [id=terraform-network]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+After this, Terraform is all done! You can go to the Cloud Console to see the network you have provisioned.
+
+In the Console, from the Navigation menu, navigate to VPC network. You will see the terraform-network has been provisioned.
+VPC networks page
+
+In Cloud Shell run the terraform show command to inspect the current state:
+terraform show
+Copied!
+These values can be referenced to configure other resources or outputs, which will be covered later in this lab.
+
+Click Check my progress to verify the objective.
+Creating Resources in terraform
+
+Task 2. Change infrastructure
+In the previous section, you created basic infrastructure with Terraform: a VPC network. In this section, you're going to modify your configuration, and see how Terraform handles change.
+
+Infrastructure is continuously evolving, and Terraform was built to help manage and enact that change. As you change Terraform configurations, Terraform builds an execution plan that only modifies what is necessary to reach your desired state.
+
+By using Terraform to change infrastructure, you can version control not only your configurations but also your state so you can see how the infrastructure evolves over time.
+
+Adding resources
+You can add new resources by adding them to your Terraform configuration and running terraform apply to provision them.
+
+In the Editor, add a compute instance resource to main.tf:
+resource "google_compute_instance" "vm_instance" {
+  name         = "terraform-instance"
+  machine_type = "e2-micro"
 
   boot_disk {
     initialize_params {
@@ -168,52 +225,113 @@ resource "google_compute_instance" "terraform" {
   }
 
   network_interface {
-    network = "default"
+    network = google_compute_network.vpc_network.name
     access_config {
     }
   }
 }
 Copied!
-This is a complete configuration that Terraform is ready to apply. The general structure should be intuitive and straightforward.
+This resource includes a few more arguments. The name and machine type are simple strings, but boot_disk and network_interface are more complex blocks. You can see all of the available options in the google_compute_instance documentation.
 
-The "resource" block in the instance.tf file defines a resource that exists within the infrastructure. A resource might be a physical component such as an VM instance.
+For this example, your compute instance will use a Debian operating system, and will be connected to the VPC Network you created earlier. Notice how this configuration refers to the network's name property with google_compute_network.vpc_network.name -- google_compute_network.vpc_network is the ID, matching the values in the block that defines the network, and name is a property of that resource.
 
-The resource block has two strings before opening the block: the resource type and the resource name. For this lab, the resource type is google_compute_instance and the name is terraform. The prefix of the type maps to the provider: google_compute_instance automatically tells Terraform that it is managed by the Google provider.
+The presence of the access_config block, even without any arguments, ensures that the instance will be accessible over the internet.
 
-Within the resource block itself is the configuration needed for the resource.
-
-In Cloud Shell, verify that your new file has been added and that there are no other *.tf files in your directory, because Terraform loads all of them:
-ls
-Copied!
-Initialization
-The first command to run for a new configuration—or after checking out an existing configuration from version control—is terraform init. This will initialize various local settings and data that will be used by subsequent commands.
-
-Terraform uses a plugin-based architecture to support the numerous infrastructure and service providers available. Each "provider" is its own encapsulated binary that is distributed separately from Terraform itself. The terraform init command will automatically download and install any provider binary for the providers to use within the configuration, which in this case is just the Google provider.
-
-Download and install the provider binary:
-terraform init
-Copied!
-The Google provider plugin is downloaded and installed in a subdirectory of the current working directory, along with various other book keeping files. You will see an "Initializing provider plugins" message. Terraform knows that you're running from a Google project, and it is getting Google resources.
-
-Installing hashicorp/google v4.77.0...
-Note: Your version number may be higher.
-The output specifies which version of the plugin is being installed and suggests that you specify this version in future configuration files to ensure that terraform init will install a compatible version.
-
-Create an execution plan:
-terraform plan
-Copied!
-Terraform performs a refresh, unless explicitly disabled, and then determines what actions are necessary to achieve the desired state specified in the configuration files. This command is a convenient way to check whether the execution plan for a set of changes matches your expectations without making any changes to real resources or to the state. For example, you might run this command before committing a change to version control, to create confidence that it will behave as expected.
-
-Note: The optional -out argument can be used to save the generated plan to a file for later execution with terraform apply.
-Apply changes
-In the same directory as the instance.tf file you created, run this command:
+Now run terraform apply to create the compute instance:
 terraform apply
 Copied!
-This output shows the Execution Plan, which describes the actions Terraform will take in order to change real infrastructure to match the configuration. The output format is similar to the diff format generated by tools like Git.
+Once again, answer yes to the confirmation prompt.
+This is a fairly straightforward change - you added a "google_compute_instance" resource named "vm_instance" to your configuration, and Terraform created the resource in Google Cloud.
 
-There is a + next to google_compute_instance.terraform, which means that Terraform will create this resource. Following that are the attributes that will be set. When the value displayed is <computed>, it means that the value won't be known until the resource is created.
+Changing resources
+In addition to creating resources, Terraform can also make changes to those resources.
 
-Example output:
+Add a tags argument to your "vm_instance" so that it looks like this:
+resource "google_compute_instance" "vm_instance" {
+  name         = "terraform-instance"
+  machine_type = "e2-micro"
+  tags         = ["web", "dev"]
+  # ...
+}
+Copied!
+Run terraform apply again to update the instance:
+terraform apply
+Copied!
+The prefix ~ means that Terraform will update the resource in-place. You can go and apply this change now by responding yes, and Terraform will add the tags to your instance.
+Click Check my progress to verify the objective.
+Change Infrastructure
+
+Destructive changes
+A destructive change is a change that requires the provider to replace the existing resource rather than updating it. This usually happens because the cloud provider doesn't support updating the resource in the way described by your configuration.
+
+Changing the disk image of your instance is one example of a destructive change.
+
+Edit the boot_disk block inside the vm_instance resource in your configuration file and change it to the following:
+  boot_disk {
+    initialize_params {
+      image = "cos-cloud/cos-stable"
+    }
+  }
+Copied!
+Now run terraform apply again to see how Terraform will apply this change to the existing resources:
+terraform apply
+Copied!
+The prefix -/+ means that Terraform will destroy and recreate the resource, rather than updating it in-place. While some attributes can be updated in-place (which are shown with the ~ prefix), changing the boot disk image for an instance requires recreating it. Terraform and the Google Cloud provider handle these details for you, and the execution plan makes it clear what Terraform will do.
+
+Additionally, the execution plan shows that the disk image change is what required your instance to be replaced. Using this information, you can adjust your changes to possibly avoid destroy/create updates if they are not acceptable in some situations.
+
+Once again, Terraform prompts for approval of the execution plan before proceeding. Answer yes to execute the planned steps.
+As indicated by the execution plan, Terraform first destroyed the existing instance and then created a new one in its place. You can use terraform show again to see the new values associated with this instance.
+
+Destroy infrastructure
+You have now seen how to build and change infrastructure. Before moving on to creating multiple resources and showing resource dependencies, you will see how to completely destroy your Terraform-managed infrastructure.
+
+Destroying your infrastructure is a rare event in production environments. But if you're using Terraform to spin up multiple environments such as development, testing, and staging, then destroying is often a useful action.
+
+Resources can be destroyed using the terraform destroy command, which is similar to terraform apply but it behaves as if all of the resources have been removed from the configuration.
+
+Try the terraform destroy command. Answer yes to execute this plan and destroy the infrastructure:
+terraform destroy
+Copied!
+The - prefix indicates that the instance and the network will be destroyed. As with apply, Terraform shows its execution plan and waits for approval before making any changes.
+
+Just like with terraform apply, Terraform determines the order in which things must be destroyed. Google Cloud won't allow a VPC network to be deleted if there are resources still in it, so Terraform waits until the instance is destroyed before destroying the network. When performing operations, Terraform creates a dependency graph to determine the correct order of operations. In more complicated cases with multiple resources, Terraform will perform operations in parallel when it's safe to do so.
+
+Click Check my progress to verify the objective.
+Destructive Changes
+
+Task 3. Create resource dependencies
+In this section, you will learn more about resource dependencies and how to use resource parameters to share information about one resource with other resources.
+
+Real-world infrastructure has a diverse set of resources and resource types. Terraform configurations can contain multiple resources, multiple resource types, and these types can even span multiple providers.
+
+In this section, you will be shown a basic example of how to configure multiple resources and how to use resource attributes to configure other resources.
+
+Recreate your network and instance. After you respond to the prompt with yes, the resources will be created:
+terraform apply
+Copied!
+Assigning a static IP address
+Now add to your configuration by assigning a static IP to the VM instance in main.tf:
+resource "google_compute_address" "vm_static_ip" {
+  name = "terraform-static-ip"
+}
+Copied!
+This should look familiar from the earlier example of adding a VM instance resource, except this time you're creating a "google_compute_address" resource type. This resource type allocates a reserved IP address to your project.
+
+Next, run terraform plan:
+terraform plan
+Copied!
+You can see what will be created with terraform plan:
+
+$ terraform plan
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+google_compute_network.vpc_network: Refreshing state... [id=terraform-network]
+google_compute_instance.vm_instance: Refreshing state... [id=terraform-instance]
+
+------------------------------------------------------------------------
 
 An execution plan has been generated and is shown below.
 Resource actions are indicated with the following symbols:
@@ -221,141 +339,181 @@ Resource actions are indicated with the following symbols:
 
 Terraform will perform the following actions:
 
-  # google_compute_instance.default will be created
-  + resource "google_compute_instance" "default" {
-      + can_ip_forward       = false
-      + cpu_platform         = (known after apply)
-      + deletion_protection  = false
-      + guest_accelerator    = (known after apply)
-      + id                   = (known after apply)
-      + instance_id          = (known after apply)
-      + label_fingerprint    = (known after apply)
-      + machine_type         = "e2-medium"
-      + metadata_fingerprint = (known after apply)
-      + name                 = "terraform"
-      + project              = "qwiklabs-gcp-42390cc9da8a4c4b"
-      + self_link            = (known after apply)
-      + tags_fingerprint     = (known after apply)
-      + zone                 = "us-west1-c"
-
-      + boot_disk {
-          + auto_delete                = true
-          + device_name                = (known after apply)
-          + disk_encryption_key_sha256 = (known after apply)
-          + kms_key_self_link          = (known after apply)
-          + source                     = (known after apply)
-
-          + initialize_params {
-              + image  = "debian-cloud/debian-11"
-              + labels = (known after apply)
-              + size   = (known after apply)
-              + type   = (known after apply)
-            }
-        }
-
-      + network_interface {
-          + address            = (known after apply)
-          + name               = (known after apply)
-          + network            = "default"
-          + network_ip         = (known after apply)
-          + subnetwork         = (known after apply)
-          + subnetwork_project = (known after apply)
-
-          + access_config {
-              + assigned_nat_ip = (known after apply)
-              + nat_ip          = (known after apply)
-              + network_tier    = (known after apply)
-            }
-        }
-
-      + scheduling {
-          + automatic_restart   = (known after apply)
-          + on_host_maintenance = (known after apply)
-          + preemptible         = (known after apply)
-
-          + node_affinities {
-              + key      = (known after apply)
-              + operator = (known after apply)
-              + values   = (known after apply)
-            }
-        }
-
+  # google_compute_address.vm_static_ip will be created
+  + resource "google_compute_address" "vm_static_ip" {
+      + address            = (known after apply)
+      + address_type       = "EXTERNAL"
+      + creation_timestamp = (known after apply)
+      + id                 = (known after apply)
+      + name               = "terraform-static-ip"
+      + network_tier       = (known after apply)
+      + project            = (known after apply)
+      + region             = (known after apply)
+      + self_link          = (known after apply)
+      + subnetwork         = (known after apply)
+      + users              = (known after apply)
     }
 
 Plan: 1 to add, 0 to change, 0 to destroy.
 
-Do you want to perform these actions? Terraform will perform the actions described above. Only 'yes' will be accepted to approve.
+------------------------------------------------------------------------
 
-Enter a value: 
-If the plan was created successfully, Terraform will now pause and wait for approval before proceeding. In a production environment, if anything in the Execution Plan seems incorrect or dangerous, it's safe to cancel here. No changes have been made to your infrastructure.
+Note: You didn't specify an "-out" parameter to save this plan, so Terraform can't guarantee that exactly these actions will be performed if
+"terraform apply" is subsequently run.
+Unlike terraform apply, the plan command will only show what would be changed, and never actually apply the changes directly. Notice that the only change you have made so far is to add a static IP. Next, you need to attach the IP address to your instance.
 
-For this case the plan looks acceptable, so type yes at the confirmation prompt to proceed.
-Executing the plan will take a few minutes because Terraform waits for the VM instance to become available.
-After this, Terraform is all done!
-
-Test completed task
-
-Click Check my progress to verify your performed task. If you have completed the task successfully, you will receive an assessment score.
-
-Assessment Completed!
-Create a VM instance in the us-west1 zone with Terraform.
-Assessment Completed!
-In the Google Cloud Console, on the Navigation menu, click Compute Engine > VM instances. The VM instances page opens and you'll see the VM instance you just created in the VM instances list.
-Terraform has written some data into the terraform.tfstate file. This state file is extremely important: it keeps track of the IDs of created resources so that Terraform knows what it is managing.
-
-In Cloud Shell, inspect the current state:
-terraform show
+Update the network_interface configuration for your instance like so:
+  network_interface {
+    network = google_compute_network.vpc_network.self_link
+    access_config {
+      nat_ip = google_compute_address.vm_static_ip.address
+    }
+  }
 Copied!
-Example output:
+The access_config block has several optional arguments, and in this case you'll set nat_ip to be the static IP address. When Terraform reads this configuration, it will:
 
-# google_compute_instance.default:
-resource "google_compute_instance" "default" {
-    can_ip_forward       = false
-    cpu_platform         = "Intel Haswell"
-    deletion_protection  = false
-    guest_accelerator    = []
-    id                   = "terraform"
-    instance_id          = "3408292216444307052"
-    label_fingerprint    = "42WmSpB8rSM="
-    machine_type         = "e2-medium"
-    metadata_fingerprint = "s6I5s2tjfKw="
-    name                 = "terraform"
-    project              = "qwiklabs-gcp-42390cc9da8a4c4b"
-    self_link            = "https://www.googleapis.com/compute/v1/projects/qwiklabs-gcp-42390cc9da8a4c4b/zones/{{{project_0.default_zone}}}/instances/terraform"
-    tags_fingerprint     = "42WmSpB8rSM="
-    zone                 = "{{{project_0.default_zone}}}"
+Ensure that vm_static_ip is created before vm_instance
+Save the properties of vm_static_ip in the state
+Set nat_ip to the value of the vm_static_ip.address property
+Run terraform plan again, but this time, save the plan:
+terraform plan -out static_ip
+Copied!
+Saving the plan this way ensures that you can apply exactly the same plan in the future. If you try to apply the file created by the plan, Terraform will first check to make sure the exact same set of changes will be made before applying the plan.
 
-    boot_disk {
-        auto_delete = true
-        device_name = "persistent-disk-0"
-        source      = "https://www.googleapis.com/compute/v1/projects/qwiklabs-gcp-42390cc9da8a4c4b/zones/{{{project_0.default_zone}}}/disks/terraform"
+In this case, you can see that Terraform will create a new google_compute_address and update the existing VM to use it.
 
-.... 
-You can see that by creating this resource, you've also gathered a lot of information about it. These values can be referenced to configure additional resources or outputs.
+Run terraform apply "static_ip" to see how Terraform plans to apply this change:
+terraform apply "static_ip"
+Copied!
+As shown above, Terraform created the static IP before modifying the VM instance. Due to the interpolation expression that passes the IP address to the instance's network interface configuration, Terraform is able to infer a dependency, and knows it must create the static IP before updating the instance.
 
-Congratulations! You've built your first infrastructure with Terraform. You've seen the configuration syntax and an example of a basic execution plan and understand the state file.
+Click Check my progress to verify the objective.
+Create Resource Dependencies
 
-Task 3. Test your understanding
-The following multiple choice questions should reinforce your understanding of this lab's concepts. Answer them to the best of your abilities.
+Implicit and explicit dependencies
+By studying the resource attributes used in interpolation expressions, Terraform can automatically infer when one resource depends on another. In the example above, the reference to google_compute_address.vm_static_ip.address creates an implicit dependency on the google_compute_address named vm_static_ip.
 
+Terraform uses this dependency information to determine the correct order in which to create and update different resources. In the example above, Terraform knows that the vm_static_ip must be created before the vm_instance is updated to use it.
 
-Terraform enables you to safely and predictably create, change, and improve infrastructure.
-check
-True
-False
+Implicit dependencies via interpolation expressions are the primary way to inform Terraform about these relationships, and should be used whenever possible.
 
-With Terraform, you can create your own custom provider plugins.
-check
-True
-False
-Congratulations
-Congratulations on completing this lab! You've learned how to use Terraform to create and manage infrastructure on Google Cloud.
+Sometimes there are dependencies between resources that are not visible to Terraform. The depends_on argument can be added to any resource and accepts a list of resources to create explicit dependencies for.
 
-Next steps/Learn More
+For example, perhaps an application you will run on your instance expects to use a specific Cloud Storage bucket, but that dependency is configured inside the application code and thus not visible to Terraform. In that case, you can use depends_on to explicitly declare the dependency.
+
+Add a Cloud Storage bucket and an instance with an explicit dependency on the bucket by adding the following to main.tf:
+# New resource for the storage bucket our application will use.
+resource "google_storage_bucket" "example_bucket" {
+  name     = "<UNIQUE-BUCKET-NAME>"
+  location = "US"
+
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+}
+
+# Create a new instance that uses the bucket
+resource "google_compute_instance" "another_instance" {
+  # Tells Terraform that this VM instance must be created only after the
+  # storage bucket has been created.
+  depends_on = [google_storage_bucket.example_bucket]
+
+  name         = "terraform-instance-2"
+  machine_type = "e2-micro"
+
+  boot_disk {
+    initialize_params {
+      image = "cos-cloud/cos-stable"
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.vpc_network.self_link
+    access_config {
+    }
+  }
+}
+Copied!
+Note: Storage buckets must be globally unique. Because of this, you will need to replace UNIQUE-BUCKET-NAME with a unique, valid name for a bucket. Using your name and the date is usually a good way to guess a unique bucket name.
+You may wonder where in your configuration these resources should go. The order that resources are defined in a terraform configuration file has no effect on how Terraform applies your changes. Organize your configuration files in a way that makes the most sense for you and your team.
+
+Now run terraform plan and terraform apply to see these changes in action:
+terraform plan
+terraform apply
+Copied!
+Click Check my progress to verify the objective.
+Create bucket dependent instance
+
+Before moving on, remove these new resources from your configuration and run terraform apply once again to destroy them. You won't use the bucket or the second instance any further in this lab.
+Task 4. Provision infrastructure
+The compute instance you launched at this point is based on the Google image given, but has no additional software installed or configuration applied.
+
+Google Cloud allows customers to manage their own custom operating system images. This can be a great way to ensure the instances you provision with Terraform are pre-configured based on your needs. Packer is the perfect tool for this and includes a builder for Google Cloud.
+
+Terraform uses provisioners to upload files, run shell scripts, or install and trigger other software like configuration management tools.
+
+Defining a provisioner
+To define a provisioner, modify the resource block defining the first vm_instance in your configuration to look like the following:
+resource "google_compute_instance" "vm_instance" {
+  name         = "terraform-instance"
+  machine_type = "e2-micro"
+  tags         = ["web", "dev"]
+
+  provisioner "local-exec" {
+    command = "echo ${google_compute_instance.vm_instance.name}:  ${google_compute_instance.vm_instance.network_interface[0].access_config[0].nat_ip} >> ip_address.txt"
+  }
+
+  # ...
+}
+Copied!
+This adds a provisioner block within the resource block. Multiple provisioner blocks can be added to define multiple provisioning steps. Terraform supports many provisioners, but for this example you are using the local-exec provisioner.
+
+The local-exec provisioner executes a command locally on the machine running Terraform, not the VM instance itself. You're using this provisioner versus the others so we don't have to worry about specifying any connection info right now.
+
+This also shows a more complex example of string interpolation than you've seen before. Each VM instance can have multiple network interfaces, so refer to the first one with network_interface[0], count starting from 0, as most programming languages do. Each network interface can have multiple access_config blocks as well, so once again you specify the first one.
+
+Run terraform apply:
+terraform apply
+Copied!
+At this point, the output may be confusing at first.
+
+Terraform found nothing to do - and if you check, you'll find that there's no ip_address.txt file on your local machine.
+
+Terraform treats provisioners differently from other arguments. Provisioners only run when a resource is created, but adding a provisioner does not force that resource to be destroyed and recreated.
+
+Use terraform taint to tell Terraform to recreate the instance:
+terraform taint google_compute_instance.vm_instance
+Copied!
+A tainted resource will be destroyed and recreated during the next apply.
+
+Run terraform apply now:
+terraform apply
+Copied!
+Verify everything worked by looking at the contents of the ip_address.txt file.
+It contains the IP address, just as you asked.
+
+Failed provisioners and tainted resources
+If a resource is successfully created but fails a provisioning step, Terraform will error and mark the resource as tainted. A resource that is tainted still exists, but shouldn't be considered safe to use, since provisioning failed.
+
+When you generate your next execution plan, Terraform will remove any tainted resources and create new resources, attempting to provision them again after creation.
+
+Destroy provisioners
+Provisioners can also be defined that run only during a destroy operation. These are useful for performing system cleanup, extracting data, etc.
+
+For many resources, using built-in cleanup mechanisms is recommended if possible (such as init scripts), but provisioners can be used if necessary.
+
+This lab won't show any destroyed provisioner examples. If you need to use destroy provisioners, please see the Provisioners documentation.
+
+Congratulations!
+In this lab, you learned how to build, change, and destroy infrastructure with Terraform. You then created resource dependencies, and provisioned basic infrastructure with Terraform configuration files.
+
+Next steps/Learn more
+Be sure to check out the following resources to receive more hands-on practice with Terraform:
+
 Hashicorp on the Google Cloud Marketplace!
+Hashicorp Learn
 Terraform Community
 Terraform Google Examples
 Google Cloud training and certification
 ...helps you make the most of Google Cloud technologies. Our classes include technical skills and best practices to help you get up to speed quickly and continue your learning journey. We offer fundamental to advanced level training, with on-demand, live, and virtual options to suit your busy schedule. Certifications help you validate and prove your skill and expertise in Google Cloud technologies.
-
-Manual Last Updated September 20, 2024
